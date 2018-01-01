@@ -18,8 +18,8 @@ import java.util.regex.Pattern
  *  	高优先级属性覆盖低优先级属性
  *
  *  多环境配置 java -jar xxx.jar --profiles.active=<ActiveName>.
- * 		启用后对应属性文件:application[-<ActiveName>].propertes
- * 		不指定环境配置时可以没有application.propertes属性文件
+ * 		启用后对应属性文件:application[-<ActiveName>].properties
+ * 		不指定环境配置时可以没有application.properties属性文件
  *
  *  命令行属性 java -jar xxx.jar --<PropertyName>=[PropertyValue]...
  *  	String属性"--" 开头： --<PropertyName>=[PropertyValue]
@@ -35,12 +35,12 @@ import java.util.regex.Pattern
  *  应用当前目录属性文件
  *  	对应路径 System.getProperty("user.dir") 或 java -jar xxx.jar --profiles.path=<profiles.path>
  *  	如果指定了profiles.active 那么对应属性文件必须存在
- *  	属性文件名称：application[-<profiles.active>].propertes
+ *  	属性文件名称：application[-<profiles.active>].properties
  *
  *  资源路径属性文件
  *  	对应路径 Properties.class.getResource("/")
- *  	如果指定了profiles.active 并且 application.propertes 存在那么对应属性文件必须存在
- *  	属性文件名称：application[-<profiles.active>].propertes
+ *  	如果指定了profiles.active 并且 application.properties 存在那么对应属性文件必须存在
+ *  	属性文件名称：application[-<profiles.active>].properties
  *
  *  支持属性中引用直接引用属性 ${PropertyName},运行期间会替换为属性值
  *  	<PropertyNameX>=PropertyValueX
@@ -83,7 +83,7 @@ object AppProperties {
      *  parameter esolution priority
      *      DynamicValues > Variable
      */
-    private val FINAL_PROPERTIES:Properties = with(Properties()) {
+    val FINAL_PROPERTIES: Properties = with(Properties()) {
         mergeProperties(CLASS_PROPERITES)
         mergeProperties(APPLICATION_PROPERITES)
         mergeProperties(SYS_ENV)
@@ -97,17 +97,14 @@ object AppProperties {
         val properties = Properties()
         var inputStream: InputStream? = null
         try {
-            inputStream = Properties::class.java.getResourceAsStream("/application.propertes")
+            inputStream = Properties::class.java.getResourceAsStream("/application.properties")
             properties.load(inputStream)
         } catch (e: Exception) {
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream!!.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-
+            try {
+                inputStream?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
         }
         if (PROFILES_ACTIVE == null) {
@@ -117,20 +114,17 @@ object AppProperties {
             return properties
         } else {
             try {
-                inputStream = Properties::class.java.getResourceAsStream("/application-$PROFILES_ACTIVE.propertes")
+                inputStream = Properties::class.java.getResourceAsStream("/application-$PROFILES_ACTIVE.properties")
                 properties.load(inputStream)
             } catch (e: Exception) {
                 if (properties.size > 0) {
-                    throw RuntimeException(Properties::class.java.getResource("/").toString() + "application-" + PROFILES_ACTIVE + ".propertes Exception.", e)
+                    throw RuntimeException(Properties::class.java.getResource("/").toString() + "application-" + PROFILES_ACTIVE + ".properties Exception.", e)
                 }
             } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream!!.close()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-
+                try {
+                    inputStream!!.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
             return properties
@@ -139,26 +133,24 @@ object AppProperties {
 
     private fun getApplicationProperties(path: String): Properties {
 
-        var propertesPath: String? = path
-        if (propertesPath == null || propertesPath.isEmpty()) {
-            propertesPath = System.getProperty("user.dir")
+        var propertiesPath: String? = path
+        if (propertiesPath == null || propertiesPath.isEmpty()) {
+            propertiesPath = System.getProperty("user.dir")
         }
 
         val properties = Properties()
         var inputStream: InputStream? = null
         try {
-            inputStream = FileInputStream(propertesPath + File.separatorChar + "application.propertes")
+            inputStream = FileInputStream(propertiesPath + File.separatorChar + "application.properties")
             properties.load(inputStream)
         } catch (e: Exception) {
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream!!.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-
+            try {
+                inputStream!!.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
+
         }
         if (PROFILES_ACTIVE == null) {
             PROFILES_ACTIVE = properties.getProperty(PROPERTY_PROFILES_ACTIVE, null)
@@ -167,18 +159,15 @@ object AppProperties {
             return properties
         } else {
             try {
-                inputStream = FileInputStream("$propertesPath/application-$PROFILES_ACTIVE.propertes")
+                inputStream = FileInputStream("$propertiesPath/application-$PROFILES_ACTIVE.properties")
                 properties.load(inputStream)
             } catch (e: Exception) {
-                throw RuntimeException("$propertesPath/application-$PROFILES_ACTIVE.propertes Exception.", e)
+                throw RuntimeException("$propertiesPath/application-$PROFILES_ACTIVE.properties Exception.", e)
             } finally {
-                if (inputStream != null) {
-                    try {
-                        inputStream!!.close()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-
+                try {
+                    inputStream!!.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
             return properties
@@ -221,14 +210,17 @@ object AppProperties {
         return properties
     }
 
-    private fun Properties.analyticVariable(prop: Properties=this): Properties {
-        prop.keys.forEach { src -> prop.keys.forEach { dest-> prop.setProperty(dest as String, prop.getProperty(dest).replace("\${$src}", prop.getProperty(src as String, "")))
-        } }
+    private fun Properties.analyticVariable(prop: Properties = this): Properties {
+        prop.keys.forEach { src ->
+            prop.keys.forEach { dest ->
+                prop.setProperty(dest as String, prop.getProperty(dest).replace("\${$src}", prop.getProperty(src as String, "")))
+            }
+        }
 
         return prop
     }
 
-    private fun Properties.generatingDynamicValues(prop: Properties=this): Properties {
+    private fun Properties.generatingDynamicValues(prop: Properties = this): Properties {
 
         prop.keys.forEach { it ->
             var value = prop.getProperty(it as String, "")
@@ -242,23 +234,23 @@ object AppProperties {
                 val cla = claInfo[0]
                 val funInfo = claInfo[1].split("""[\(\[]""".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()
                 if (claInfo.isEmpty()) continue
-                val `fun` = funInfo[0]
+                val method = funInfo[0]
                 if (funInfo.size > 1 && !funInfo[1].isEmpty())
                     paramInfo = funInfo[1].split("""[\,\]\)]""".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()
                 val claM = VALUE_FUN[cla] ?: continue
-                val funM = claM.get(`fun`) ?: continue
+                val funM = claM[method] ?: continue
                 value = value.replace(
                         temp,
                         funM.compute(paramInfo))
             }
-            prop.setProperty(it , value)
+            prop.setProperty(it, value)
 
         }
         return prop
     }
 
-    private fun Properties.mergeProperties(src: Properties,dest:Properties=this): Properties {
-        src.forEach { k, v -> dest.setProperty(k as String,v as String) }
+    private fun Properties.mergeProperties(src: Properties, dest: Properties = this): Properties {
+        src.forEach { k, v -> dest.setProperty(k as String, v as String) }
         return dest
     }
 
@@ -291,16 +283,28 @@ object AppProperties {
      * @param <V> 默认值类型
      * @return 根据默认值类型转换并返回属性名对应的值
     </V> */
-    operator fun <V> get(propertyName: String, defaultValue: V): V {
+    inline operator fun <reified V> get(propertyName: String, defaultValue: V): V {
 
         val linuxPropertyName = propertyName.replace('.', '_')
-        FINAL_PROPERTIES
         var value = FINAL_PROPERTIES.getProperty(propertyName, null)
         value = if (value == null) FINAL_PROPERTIES.getProperty(linuxPropertyName, null) else value
         return if (value != null) {
-            covertValue(defaultValue, value)
+            covertValue(value)
         } else {
             defaultValue
+        }
+
+    }
+
+    inline operator fun <reified V> get(propertyName: String): V? {
+
+        val linuxPropertyName = propertyName.replace('.', '_')
+        var value = FINAL_PROPERTIES.getProperty(propertyName, null)
+        value = if (value == null) FINAL_PROPERTIES.getProperty(linuxPropertyName, null) else value
+        return if (value != null) {
+            covertValue(value)
+        } else {
+            null
         }
 
     }
@@ -311,7 +315,7 @@ object AppProperties {
      * @param defaultValue 当值不存在时返回此默认值，默认值不能为null
      * @return 返回属性名对应的值
      */
-    operator fun get(propertyName: String, defaultValue: Char): Char {
+  /*  operator fun get(propertyName: String, defaultValue: Char): Char {
         val linuxPropertyName = propertyName.replace('.', '_')
         var value = FINAL_PROPERTIES.getProperty(propertyName, null)
         value = if (value == null) FINAL_PROPERTIES.getProperty(linuxPropertyName, null) else value
@@ -320,7 +324,7 @@ object AppProperties {
         } else {
             defaultValue
         }
-    }
+    }*/
 
     /**
      * 设置应用内属性值，如果属性已存在将会被覆盖
@@ -335,24 +339,24 @@ object AppProperties {
         return System.setProperty(propertyName, propertyValue)
     }
 
-    @Suppress("IMPLICIT_CAST_TO_ANY", "UNCHECKED_CAST")
-    private fun <V> covertValue(defaultValue: V, value: String): V {
 
-        return when (defaultValue) {
-            defaultValue is String -> value.trim()
-            defaultValue is Boolean -> java.lang.Boolean.valueOf(value.trim())
-            defaultValue is Byte -> java.lang.Byte.valueOf(value.trim())
-            defaultValue is Short -> java.lang.Short.valueOf(value.trim())
-            defaultValue is Int -> Integer.valueOf(value.trim())
-            defaultValue is Long -> java.lang.Long.valueOf(value.trim())
-            defaultValue is Float -> java.lang.Float.valueOf(value.trim())
-            defaultValue is Double -> java.lang.Double.valueOf(value.trim())
-            defaultValue is Char -> value[0]
-            else -> value
-        } as V
+    @JvmName("=covertValue") inline fun <reified V> covertValue(value: String): V {
+        return when (V::class.java) {
+                java.lang.String::class.java -> value.trim()
+                java.lang.Boolean::class.java -> java.lang.Boolean.valueOf(value.trim())
+                java.lang.Byte::class.java -> java.lang.Byte.valueOf(value.trim())
+                java.lang.Short::class.java -> java.lang.Short.valueOf(value.trim())
+                java.lang.Integer::class.java -> java.lang.Integer.valueOf(value.trim())
+                java.lang.Long::class.java -> java.lang.Long.valueOf(value.trim())
+                java.lang.Float::class.java -> java.lang.Float.valueOf(value.trim())
+                java.lang.Double::class.java -> java.lang.Double.valueOf(value.trim())
+                java.lang.Character::class.java -> java.lang.Character.valueOf(value[0])
+                else -> value
+            } as V
+
     }
 
-   private fun printProperties(pro: Properties) {
+    private fun printProperties(pro: Properties) {
 
         pro.forEach { k, v -> println("$k\t=\t$v") }
 
@@ -429,4 +433,14 @@ object AppProperties {
 
 
     }
+}
+
+fun main(args: Array<String>) {
+    println(AppProperties["abc", ""])
+    var amChar:Char?=AppProperties["amChara"]
+    amChar?.let {
+        println("amChar=$amChar")
+    }
+    println("${AppProperties["USERNAME", 0]}")
+    println(AppProperties["java.awt.graphicsenv", ""])
 }
