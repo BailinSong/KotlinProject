@@ -1,3 +1,5 @@
+@file:Suppress("KDocUnresolvedReference")
+
 package com.blueline.common
 
 import java.io.File
@@ -74,8 +76,8 @@ object AppProperties {
     private val CMD_PARAMS = paresCmdParamsToProperties()
     private val SYS_PROPERTIES = getProperties(System.getProperties())
     private val SYS_ENV = getProperties(System.getenv())
-    private val APPLICATION_PROPERITES = getApplicationProperties(CMD_PARAMS.getProperty(PROPERTY_PROFILES_PATH, ""))
-    private val CLASS_PROPERITES = getClassPathProperties()
+    private val APPLICATION_PROPERTIES = getApplicationProperties(CMD_PARAMS.getProperty(PROPERTY_PROFILES_PATH, ""))
+    private val CLASS_PROPERTIES = getClassPathProperties()
 
     /**
      * attribute priority
@@ -84,8 +86,8 @@ object AppProperties {
      *      DynamicValues > Variable
      */
     val FINAL_PROPERTIES: Properties = with(Properties()) {
-        mergeProperties(CLASS_PROPERITES)
-        mergeProperties(APPLICATION_PROPERITES)
+        mergeProperties(CLASS_PROPERTIES)
+        mergeProperties(APPLICATION_PROPERTIES)
         mergeProperties(SYS_ENV)
         mergeProperties(SYS_PROPERTIES)
         mergeProperties(CMD_PARAMS)
@@ -115,11 +117,10 @@ object AppProperties {
         } else {
             try {
                 inputStream = Properties::class.java.getResourceAsStream("/application-$PROFILES_ACTIVE.properties")
-                properties.load(inputStream)
+                val tempProperties=Properties()
+                tempProperties.load(inputStream)
+                properties.mergeProperties(tempProperties)
             } catch (e: Exception) {
-                if (properties.size > 0) {
-                    throw RuntimeException(Properties::class.java.getResource("/").toString() + "application-" + PROFILES_ACTIVE + ".properties Exception.", e)
-                }
             } finally {
                 try {
                     inputStream!!.close()
@@ -160,7 +161,9 @@ object AppProperties {
         } else {
             try {
                 inputStream = FileInputStream("$propertiesPath/application-$PROFILES_ACTIVE.properties")
-                properties.load(inputStream)
+                val tempProperties=Properties()
+                tempProperties.load(inputStream)
+                properties.mergeProperties(tempProperties)
             } catch (e: Exception) {
                 throw RuntimeException("$propertiesPath/application-$PROFILES_ACTIVE.properties Exception.", e)
             } finally {
@@ -309,37 +312,19 @@ object AppProperties {
 
     }
 
-    /**
-     * 获取属性值
-     * @param propertyName 属性名
-     * @param defaultValue 当值不存在时返回此默认值，默认值不能为null
-     * @return 返回属性名对应的值
-     */
-  /*  operator fun get(propertyName: String, defaultValue: Char): Char {
-        val linuxPropertyName = propertyName.replace('.', '_')
-        var value = FINAL_PROPERTIES.getProperty(propertyName, null)
-        value = if (value == null) FINAL_PROPERTIES.getProperty(linuxPropertyName, null) else value
-        return if (value != null) {
-            value[0]
-        } else {
-            defaultValue
-        }
-    }*/
-
-    /**
+      /**
      * 设置应用内属性值，如果属性已存在将会被覆盖
      * @param propertyName 属性名
      * @param propertyValue 属性值
      * @return 属性名源值
      */
     @Synchronized operator fun set(propertyName: String, propertyValue: String): String {
-        println("Set property $propertyName=$propertyValue")
-
         FINAL_PROPERTIES.setProperty(propertyName, propertyValue)
         return System.setProperty(propertyName, propertyValue)
     }
 
 
+    @Suppress("IMPLICIT_CAST_TO_ANY")
     @JvmName("=covertValue") inline fun <reified V> covertValue(value: String): V {
         return when (V::class.java) {
                 java.lang.String::class.java -> value.trim()
@@ -367,11 +352,11 @@ object AppProperties {
         printProperties(FINAL_PROPERTIES)
     }
 
-    interface ICalculate {
+    internal interface ICalculate {
         fun compute(params: Array<String?>): String
     }
 
-    class Randoms {
+    internal class Randoms {
         init {
             throw RuntimeException("This operation is not supported.")
         }
@@ -435,12 +420,15 @@ object AppProperties {
     }
 }
 
+typealias PROPS = AppProperties
+
 fun main(args: Array<String>) {
-    println(AppProperties["abc", ""])
-    var amChar:Char?=AppProperties["amChara"]
+
+    println(PROPS["abc", ""])
+    val amChar:Char?=PROPS["amChara"]
     amChar?.let {
         println("amChar=$amChar")
     }
-    println("${AppProperties["USERNAME", 0]}")
-    println(AppProperties["java.awt.graphicsenv", ""])
+    println("${PROPS["USERNAME", 0]}")
+    println(PROPS["java.awt.graphicsenv", ""])
 }
